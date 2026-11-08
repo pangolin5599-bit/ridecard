@@ -93,6 +93,7 @@ details[open] summary::after{content:"－"}
       <button type="button" data-v="black" aria-pressed="false">黒</button>
     </div>
   </div>
+  <div class="row"><label>ルート色</label><div class="seg" id="rcolSeg"><button type="button" data-v="" aria-pressed="true">自動</button><button type="button" data-v="same" aria-pressed="false">文字と同じ</button><button type="button" data-v="orange" aria-pressed="false">オレンジ</button></div></div>
   <div class="row"><label>動かす</label><div class="seg" id="tgtSeg"><button type="button" data-v="photo" aria-pressed="true">写真</button><button type="button" data-v="num" aria-pressed="false">数字</button><button type="button" data-v="route" aria-pressed="false">ルート</button></div></div>
   <div class="row"><label></label><button class="link" id="tgtReset" type="button">この位置・大きさを元に戻す</button></div>
   <div class="row"><label for="scrim">暗幕</label><input type="range" id="scrim" min="0" max="80" value="40"></div>
@@ -129,7 +130,7 @@ const F = {
   cond: '"Barlow Condensed","Arial Narrow",Arial,sans-serif'
 };
 const st = { img: null, zoom: 1, ox: 0, oy: 0, preset: 'auto', autoIdx: 0, text: 'auto', scrim: 0.4,
-  target: 'photo', nx: 0, ny: 0, nk: 1, rx: 0, ry: 0, rk: 1, route: null, prof: null, speedAuto: false, panel: 'auto', logo: true, credit: true, src: '', vals: { dist: '', time: '', speed: '', elev: '', max: '' }, date: '', coord: '' };
+  rcol: '', target: 'photo', nx: 0, ny: 0, nk: 1, rx: 0, ry: 0, rk: 1, route: null, prof: null, speedAuto: false, panel: 'auto', logo: true, credit: true, src: '', vals: { dist: '', time: '', speed: '', elev: '', max: '' }, date: '', coord: '' };
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // 数字・ルートの移動と拡大縮小（アンカーを基準に拡大）
@@ -186,7 +187,7 @@ function analyze() {
 }
 function rank(A) {
   const cB = A.busy(270, 480, 540, 960), aB = A.busy(0, 0, W, H), bB = A.busy(0, v(1180, 700), W, v(740, 600));
-  const s = { hero: 2.0 - cB * 14, glass: 1.8 - bB * 14, minimal: 0.4 + cB * 10,
+  const s = { list: 1.1 - bB * 8, hero: 2.0 - cB * 14, glass: 1.8 - bB * 14, minimal: 0.4 + cB * 10,
     solus: 1.2 - aB * 6, big: 1.0 - aB * 5, poster: 0.9 - aB * 5,
     panel: 1.4 - aB * 3, frame: 1.2 - aB * 3, table: 0.7 + (A.mean < 0.45 ? 0.7 : 0) - aB * 2 };
   return Object.keys(s).sort((a, b) => s[b] - s[a]);
@@ -269,9 +270,10 @@ function route(T, box, o) {
   const s = Math.min(box.w / r.w, box.h / r.h);
   const ox = box.x + (box.w - r.w * s) / 2, oy = box.y + (box.h - r.h * s) / 2;
   c.save();
-  c.strokeStyle = T.fg; c.fillStyle = T.fg; c.globalAlpha = o.alpha == null ? 1 : o.alpha;
+  const ORG = '#FC5200', rc = st.rcol === 'orange' ? ORG : st.rcol === 'same' ? T.fg : (o.def || T.fg);
+  c.strokeStyle = rc; c.fillStyle = rc; c.globalAlpha = o.alpha == null ? 1 : o.alpha;
   c.lineWidth = o.lw || 4; c.lineJoin = 'round'; c.lineCap = 'round';
-  if (o.glow) { c.shadowColor = T.fg; c.shadowBlur = 26; } else shadow(T);
+  if (o.glow) { c.shadowColor = rc; c.shadowBlur = 26; } else shadow(T);
   c.beginPath();
   (r.paths || [r.pts]).forEach(path => path.forEach((p, i) => { const x = ox + p[0] * s, y = oy + p[1] * s; i ? c.lineTo(x, y) : c.moveTo(x, y); }));
   c.stroke();
@@ -332,6 +334,29 @@ const PRESETS = {
     stat(T, { label: 'Moving time', value: S.time, x: W - M, y: v(1530, 960), align: 'right', vs: 62, ls: 28, fam: 'cond', wt: 600, max: 330 });
     stat(T, { label: 'Avg. speed', value: S.speed, unit: 'km/h', x: W - M, y: v(1640, 1070), align: 'right', vs: 62, ls: 28, fam: 'cond', wt: 600, max: 330 });
     stat(T, { label: 'Elevation gain', value: S.elev, unit: 'm', x: W - M, y: v(1750, 1180), align: 'right', vs: 62, ls: 28, fam: 'cond', wt: 600, max: 330 });
+  },
+  list(T, S) {
+    scrim(T, 'bottom', 0.7);
+    route(T, v({ x: 110, y: 250, w: 860, h: 1000 }, { x: 110, y: 120, w: 860, h: 640 }), { lw: 11, def: '#FC5200' });
+    const x0 = 230, x1 = W - 230, y0 = v(1380, 850), pitch = 56;
+    const rows = [['距離', S.dist, 'km'], ['獲得標高', S.elev, 'm'], ['タイム', S.time, ''], ['平均スピード', S.speed, 'km/h']];
+    if (S.max && S.max !== '--') rows.push(['最高スピード', S.max, 'km/h']);
+    c.save(); xfNum(x0, y0); shadow(T); c.textBaseline = 'alphabetic';
+    c.fillStyle = T.fg; c.font = fnt(46, 'num', 800); c.textAlign = 'left';
+    if ('letterSpacing' in c) c.letterSpacing = '4px';
+    c.fillText('RIDE', x0, y0);
+    if ('letterSpacing' in c) c.letterSpacing = '0px';
+    rows.forEach((r, i) => {
+      const y = y0 + 78 + i * pitch, val = r[1] === '--' ? '--' : (r[2] ? r[1] + ' ' + r[2] : r[1]);
+      c.font = '400 30px "Barlow", "Hiragino Sans", "Noto Sans JP", sans-serif'; c.fillStyle = T.fg; c.textAlign = 'left'; c.fillText(r[0], x0, y);
+      const lw = c.measureText(r[0]).width;
+      c.font = fnt(32, 'num', 500); c.textAlign = 'right'; c.fillText(val, x1, y);
+      const vw = c.measureText(val).width;
+      c.globalAlpha = 0.7;
+      for (let x = x0 + lw + 18; x < x1 - vw - 18; x += 13) { c.beginPath(); c.arc(x, y - 9, 2.2, 0, 7); c.fill(); }
+      c.globalAlpha = 1;
+    });
+    c.restore();
   },
   poster(T, S) {
     scrim(T, 'flat', 1.1);
@@ -510,7 +535,7 @@ const tintCv = document.createElement('canvas');
 function drawMark(id, T, A) {
   if (!st.logo || !logoImg.complete || !logoImg.naturalWidth) return;
   const D = 1920 - H, IN = 150;   // 下の角にInstagramのアイコンが重なるので内側に寄せる
-  const pos = { solus: [IN, 1868 - D, 'left'], minimal: [IN, 1868 - D, 'left'], big: [IN, 1868 - D, 'left'], hero: [IN, 1868 - D, 'left'],
+  const pos = { solus: [IN, 1868 - D, 'left'], minimal: [IN, 1868 - D, 'left'], big: [IN, 1868 - D, 'left'], hero: [IN, 1868 - D, 'left'], list: [IN, 1868 - D, 'left'],
     poster: [W - 76, 134, 'right'], glass: [IN, 1896 - D, 'left'], table: [W / 2, 1900 - D, 'center'], panel: [IN, 1860 - D, 'left'], frame: [IN, 1860 - D, 'left'] }[id];
   let col = T.fg;
   if (id === 'table') col = accentCss(A);
@@ -528,7 +553,7 @@ function drawMark(id, T, A) {
 }
 function drawCredit(id, T, A) {
   if (!st.credit || st.src !== 'strava') return;
-  const y = ({ solus: 1868, minimal: 1868, big: 1868, hero: 1868, poster: 1868, glass: 1896, table: 1900, panel: 1860, frame: 1860 }[id] || 1868) - (1920 - H);
+  const y = ({ solus: 1868, minimal: 1868, big: 1868, hero: 1868, poster: 1868, list: 1868, glass: 1896, table: 1900, panel: 1860, frame: 1860 }[id] || 1868) - (1920 - H);
   let col = T.fg;
   if (id === 'table') col = accentCss(A);
   if (id === 'panel' || id === 'frame') col = inkOn(panelRgb(A))[0];
@@ -539,7 +564,7 @@ function drawCredit(id, T, A) {
   c.fillText('Data from Strava', W - 150, y);
   c.restore();
 }
-const NAMES = { auto: 'おまかせ', table: 'データ表', panel: 'カラーパネル', frame: '額縁', solus: 'Solus風', minimal: 'ミニマル', big: 'ビッグ数字', hero: 'ルート主役', poster: 'ポスター', glass: 'ガラス' };
+const NAMES = { auto: 'おまかせ', table: 'データ表', panel: 'カラーパネル', frame: '額縁', solus: 'Solus風', minimal: 'ミニマル', big: 'ビッグ数字', hero: 'ルート主役', poster: 'ポスター', glass: 'ガラス', list: 'リスト' };
 
 /* ---------- render ---------- */
 let queued = false;
@@ -1114,6 +1139,10 @@ $('sizeSeg').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   setSize(+b.dataset.v);
   [...$('sizeSeg').children].forEach(x => x.setAttribute('aria-pressed', x === b));
+});
+$('rcolSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  st.rcol = b.dataset.v; [...$('rcolSeg').children].forEach(x => x.setAttribute('aria-pressed', x === b)); schedule();
 });
 $('credSeg').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
