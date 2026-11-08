@@ -561,9 +561,7 @@ function drawCredit(id, T, A) {
   c.font = '500 21px "Barlow", system-ui, sans-serif'; c.textAlign = 'right'; c.textBaseline = 'alphabetic';
   c.fillStyle = col; c.globalAlpha = 0.85;
   if (id !== 'panel' && id !== 'frame' && !T.light) { c.shadowColor = 'rgba(0,0,0,.4)'; c.shadowBlur = 8; }
-  const sw = c.measureText('STRAVA').width;
-  c.fillText('STRAVA', W - 150, y);
-  c.fillText('Data from ', W - 150 - sw, y);
+  c.fillText('Data from STRAVA', W - 150, y);
   c.restore();
 }
 const NAMES = { auto: 'おまかせ', table: 'データ表', panel: 'カラーパネル', frame: '額縁', solus: 'Solus風', minimal: 'ミニマル', big: 'ビッグ数字', hero: 'ルート主役', poster: 'ポスター', glass: 'ガラス', list: 'リスト' };
